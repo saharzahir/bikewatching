@@ -1,5 +1,6 @@
 // Import Mapbox as an ESM module
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 
 // Check that Mapbox GL JS is loaded
 console.log('Mapbox GL JS Loaded:', mapboxgl);
@@ -17,6 +18,16 @@ const map = new mapboxgl.Map({
   minZoom: 5,
   maxZoom: 18,
 });
+
+// Select the SVG element inside the map
+const svg = d3.select('#map').select('svg');
+
+// Convert longitude/latitude to pixel coordinates
+function getCoords(station) {
+  const point = new mapboxgl.LngLat(+station.lon, +station.lat);
+  const { x, y } = map.project(point);
+  return { cx: x, cy: y };
+}
 
 map.on('load', async () => {
   // Boston bike lanes
@@ -52,4 +63,37 @@ map.on('load', async () => {
       'line-opacity': 0.4,
     },
   });
+
+  // Load station data
+  const jsonData = await d3.json(
+    'https://dsc106.com/labs/lab07/data/bluebikes-stations.json'
+  );
+
+  const stations = jsonData.data.stations;
+
+  // Add circles
+  const circles = svg
+    .selectAll('circle')
+    .data(stations)
+    .enter()
+    .append('circle')
+    .attr('r', 5)
+    .attr('fill', 'steelblue')
+    .attr('stroke', 'white')
+    .attr('stroke-width', 1)
+    .attr('opacity', 0.8);
+
+  // Update circle positions
+  function updatePositions() {
+    circles
+      .attr('cx', (d) => getCoords(d).cx)
+      .attr('cy', (d) => getCoords(d).cy);
+  }
+
+  updatePositions();
+
+  map.on('move', updatePositions);
+  map.on('zoom', updatePositions);
+  map.on('resize', updatePositions);
+  map.on('moveend', updatePositions);
 });
