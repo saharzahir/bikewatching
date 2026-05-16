@@ -22,7 +22,7 @@ const map = new mapboxgl.Map({
 // Select the SVG element inside the map
 const svg = d3.select('#map').select('svg');
 
-// Convert longitude/latitude to pixel coordinates
+// Define a Helper Function to Convert Coordinates
 function getCoords(station) {
   const point = new mapboxgl.LngLat(+station.lon, +station.lat);
   const { x, y } = map.project(point);
@@ -71,7 +71,7 @@ map.on('load', async () => {
 
   const stations = jsonData.data.stations;
 
-  // Add circles
+  // Append circles to the SVG for each station
   const circles = svg
     .selectAll('circle')
     .data(stations)
@@ -83,15 +83,17 @@ map.on('load', async () => {
     .attr('stroke-width', 1)
     .attr('opacity', 0.8);
 
-  // Update circle positions
+  // Function to update circle positions when the map moves/zooms
   function updatePositions() {
     circles
       .attr('cx', (d) => getCoords(d).cx)
       .attr('cy', (d) => getCoords(d).cy);
   }
 
+  // Initial position update when map loads
   updatePositions();
 
+  // Reposition markers on map interactions
   map.on('move', updatePositions);
   map.on('zoom', updatePositions);
   map.on('resize', updatePositions);
